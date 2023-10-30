@@ -70,8 +70,16 @@ public class FileManager {
         return true;
     }
 
+    public boolean acceptJarFileName(String name) {
+        return name.toLowerCase().endsWith(".jar");
+    }
+
     public boolean acceptJarFile(File file) {
-        return isJar(file) || isZip(file) || isWar(file);
+        return isAar(file) || isJar(file) || isZip(file) || isWar(file);
+    }
+
+    public boolean acceptAarFile(File file) {
+        return isAar(file);
     }
 
     public Collection extractFiles() {
@@ -124,6 +132,10 @@ public class FileManager {
  
     private boolean isJar(File file) {
         return existsWithExtension(file, ".jar");
+    }
+
+    private boolean isAar(File file) {
+        return existsWithExtension(file, ".aar");
     }
 
     private boolean existsWithExtension(File file, String extension) {

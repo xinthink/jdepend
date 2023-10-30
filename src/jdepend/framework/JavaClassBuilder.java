@@ -123,15 +123,33 @@ public class JavaClassBuilder {
             if (fileManager.acceptClassFileName(e.getName())) {
                 InputStream is = null;
                 try {
-	                is = new BufferedInputStream(file.getInputStream(e));
+                    is = new BufferedInputStream(file.getInputStream(e));
                     JavaClass jc = parser.parse(is);
                     javaClasses.add(jc);
+                } catch (IOException ioe) {
+                    System.out.println("Failed loading " + e.getName() + " in " + file.getName() + ": " + ioe);
                 } finally {
                     is.close();
                 }
+            } else if (fileManager.acceptJarFileName(e.getName())) {
+                parseJarEntry(javaClasses, file, e);
             }
         }
 
         return javaClasses;
+    }
+
+    private void parseJarEntry(Collection javaClasses, JarFile file, ZipEntry jarEntry) {
+        try (final ZipInputStream zip = new ZipInputStream(file.getInputStream(jarEntry))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (fileManager.acceptClassFileName(entry.getName())) {
+                    JavaClass jc = parser.parse(zip);
+                    javaClasses.add(jc);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Failed loading " + jarEntry.getName() + " in " + file.getName() + ": " + e);
+        }
     }
 }
