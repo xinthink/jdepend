@@ -109,6 +109,16 @@ public class JDepend {
     private JavaClassBuilder builder;
     private Collection components;
 
+    /**
+     * Maps JavaClass instances to their corresponding module names.
+     */
+    private final Map<JavaClass, String> classModules;
+
+    /**
+     * Modules indexed with their names.
+     */
+    private final Map<String, Module> modules;
+
     public JDepend() {
         this(new PackageFilter());
     }
@@ -118,8 +128,10 @@ public class JDepend {
         setFilter(filter);
 
         this.packages = new HashMap();
-        this.fileManager = new FileManager();
+        this.classModules = new HashMap<>();
+        this.modules = new HashMap<>();
 
+        this.fileManager = new FileManager();
         this.parser = new ClassFileParser(filter);
         this.builder = new JavaClassBuilder(parser, fileManager);
 
@@ -127,7 +139,7 @@ public class JDepend {
         addPackages(config.getConfiguredPackages());
         analyzeInnerClasses(config.getAnalyzeInnerClasses());
     }
-    
+
     /**
      * Analyzes the registered directories and returns the collection of
      * analyzed packages.
@@ -136,10 +148,11 @@ public class JDepend {
      */
     public Collection analyze() {
 
-        Collection classes = builder.build();
-        
-        for (Iterator i = classes.iterator(); i.hasNext();) {
-            analyzeClass((JavaClass)i.next());
+        JavaClassDataset dateset = builder.build();
+        Collection<JavaClass> classes = dateset.getJavaClasses();
+
+        for (JavaClass aClass : classes) {
+            analyzeClass(aClass);
         }
 
         return getPackages();
@@ -339,6 +352,12 @@ public class JDepend {
             JavaPackage importedPackage = (JavaPackage)i.next();
             importedPackage = addPackage(importedPackage.getName());
             clazzPackage.dependsUpon(importedPackage);
+        }
+    }
+
+    public void addModule(String name) {
+        if (!modules.containsKey(name)) {
+            modules.put(name, new Module(name));
         }
     }
 }

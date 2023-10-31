@@ -2,6 +2,7 @@ package jdepend.framework;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.*;
 import java.util.zip.*;
 
@@ -18,7 +19,8 @@ public class JavaClassBuilder {
     private AbstractParser parser;
     private FileManager fileManager;
 
-    
+    private JavaClassDataset dataset;
+
     public JavaClassBuilder() {
         this(new ClassFileParser(), new FileManager());
     }
@@ -33,26 +35,27 @@ public class JavaClassBuilder {
     }
 
     public int countClasses() {
+        AtomicInteger count = new AtomicInteger(0);
         AbstractParser counter = new AbstractParser() {
 
             public JavaClass parse(InputStream is) {
-                return new JavaClass("");
+                count.incrementAndGet();
+                return null;
             }
         };
 
-        JavaClassBuilder builder = new JavaClassBuilder(counter, fileManager);
-        Collection classes = builder.build();
-        return classes.size();
+        new JavaClassBuilder(counter, fileManager).build();
+        return count.get();
     }
 
     /**
      * Builds the <code>JavaClass</code> instances.
      * 
-     * @return Collection of <code>JavaClass</code> instances.
+     * @return A <code>JavaClassDataset</code> contains classes and their modules.
      */
-    public Collection build() {
+    public JavaClassDataset build() {
 
-        Collection classes = new ArrayList();
+        JavaClassDataset dataset = new JavaClassDataset();
 
         for (Iterator i = fileManager.extractFiles().iterator(); i.hasNext();) {
 
@@ -60,44 +63,37 @@ public class JavaClassBuilder {
 
             try {
 
-                classes.addAll(buildClasses(nextFile));
+                buildClasses(nextFile, dataset);
 
             } catch (IOException ioe) {
                 System.err.println("\n" + ioe.getMessage());
             }
         }
 
-        return classes;
+        return dataset;
     }
 
     /**
-     * Builds the <code>JavaClass</code> instances from the 
+     * Builds the <code>JavaClass</code> instances from the
      * specified file.
-     * 
-     * @param file Class or Jar file.
-     * @return Collection of <code>JavaClass</code> instances.
+     *
+     * @param file    Class or Jar file.
+     * @param dataset The dataset to be populated with the classes.
      */
-    public Collection buildClasses(File file) throws IOException {
+    public void buildClasses(File file, JavaClassDataset dataset) throws IOException {
 
         if (fileManager.acceptClassFile(file)) {
-            InputStream is = null;
-            try {
-                is = new BufferedInputStream(new FileInputStream(file));
+            try (InputStream is = new FileInputStream(file)) {
                 JavaClass parsedClass = parser.parse(is);
-                Collection javaClasses = new ArrayList();
-                javaClasses.add(parsedClass);
-                return javaClasses;
-            } finally {
-                if (is != null) {
-                    is.close();
+                if (parsedClass != null) {
+                    dataset.addJavaClass(parsedClass);
                 }
             }
         } else if (fileManager.acceptJarFile(file)) {
 
             JarFile jarFile = new JarFile(file);
-            Collection result = buildClasses(jarFile);
+            buildClasses(jarFile, dataset);
             jarFile.close();
-            return result;
 
         } else {
             throw new IOException("File is not a valid " + 
@@ -111,41 +107,37 @@ public class JavaClassBuilder {
      * jar, war, or zip file.
      * 
      * @param file Jar, war, or zip file.
-     * @return Collection of <code>JavaClass</code> instances.
+     * @param dataset The dataset to be populated with the classes.
      */
-    public Collection buildClasses(JarFile file) throws IOException {
+    public void buildClasses(JarFile file, JavaClassDataset dataset) throws IOException {
 
-        Collection javaClasses = new ArrayList();
-
-        Enumeration entries = file.entries();
+        Enumeration<JarEntry> entries = file.entries();
         while (entries.hasMoreElements()) {
-            ZipEntry e = (ZipEntry) entries.nextElement();
+            ZipEntry e = entries.nextElement();
             if (fileManager.acceptClassFileName(e.getName())) {
-                InputStream is = null;
-                try {
-                    is = new BufferedInputStream(file.getInputStream(e));
+                try (InputStream is = new BufferedInputStream(file.getInputStream(e))) {
                     JavaClass jc = parser.parse(is);
-                    javaClasses.add(jc);
+                    if (jc != null) {
+                        dataset.addJavaClass(jc);
+                    }
                 } catch (IOException ioe) {
                     System.out.println("Failed loading " + e.getName() + " in " + file.getName() + ": " + ioe);
-                } finally {
-                    is.close();
                 }
             } else if (fileManager.acceptJarFileName(e.getName())) {
-                parseJarEntry(javaClasses, file, e);
+                parseJarEntry(file, e, dataset);
             }
         }
-
-        return javaClasses;
     }
 
-    private void parseJarEntry(Collection javaClasses, JarFile file, ZipEntry jarEntry) {
+    private void parseJarEntry(JarFile file, ZipEntry jarEntry, JavaClassDataset dataset) {
         try (final ZipInputStream zip = new ZipInputStream(file.getInputStream(jarEntry))) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
                 if (fileManager.acceptClassFileName(entry.getName())) {
                     JavaClass jc = parser.parse(zip);
-                    javaClasses.add(jc);
+                    if (jc != null) {
+                        dataset.addJavaClass(jc);
+                    }
                 }
             }
         } catch (IOException e) {

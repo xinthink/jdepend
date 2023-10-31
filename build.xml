@@ -10,7 +10,7 @@
   <property environment="env"/>
 
   <property name="Name" value="${ant.project.name}"/>
-  <property name="version" value="2.10"/>
+  <property name="version" value="2.11"/>
 
   <property name="src.dir" location="src"/>
   <property name="test.dir" location="test"/>

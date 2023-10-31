@@ -17,7 +17,6 @@ public class FileManager {
     private ArrayList directories;
     private boolean acceptInnerClasses;
 
-
     public FileManager() {
         directories = new ArrayList();
         acceptInnerClasses = true;
