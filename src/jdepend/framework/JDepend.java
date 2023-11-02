@@ -110,9 +110,19 @@ public class JDepend {
     private Collection components;
 
     /**
+     * Table of JavaClass instances.
+     */
+    private Map<String, JavaClass> javaClasses;
+
+    /**
      * Maps JavaClass instances to their corresponding module names.
      */
     private Map<String, String> classModules;
+
+    /**
+     * Indicates whether the analysis is module-based.
+     */
+    private boolean isModuleAnalysis;
 
     public JDepend() {
         this(new PackageFilter());
@@ -131,6 +141,7 @@ public class JDepend {
         PropertyConfigurator config = new PropertyConfigurator();
         addPackages(config.getConfiguredPackages());
         analyzeInnerClasses(config.getAnalyzeInnerClasses());
+        configModuleAnalysis(config);
     }
 
     /**
@@ -142,10 +153,10 @@ public class JDepend {
     public Collection<JavaPackage> analyze() {
 
         JavaClassDataset dateset = builder.build();
-        Collection<JavaClass> classes = dateset.getJavaClasses();
+        this.javaClasses = dateset.getJavaClasses();
         this.classModules = dateset.getJavaClassModule();
 
-        for (JavaClass aClass : classes) {
+        for (JavaClass aClass : javaClasses.values()) {
             analyzeClass(aClass);
         }
 
@@ -153,12 +164,11 @@ public class JDepend {
     }
 
     /**
-     * Sets the path of the project. Which is used to infer the module names.
-     *
-     * @param projectPath Project path.
+     * Configures the module analysis.
      */
-    public void setProjectPath(String projectPath) {
-        fileManager.setProjectPath(projectPath);
+    private void configModuleAnalysis(PropertyConfigurator config) {
+        fileManager.setProjectPath(config.getProjectRoot());
+        isModuleAnalysis = config.isModuleAnalysis();
     }
 
     /**
@@ -347,8 +357,11 @@ public class JDepend {
             return;
         }
 
-        analyzeClassByModule(clazz);
-//        analyzeClassByPackage(clazz);
+        if (isModuleAnalysis) {
+            analyzeClassByModule(clazz);
+        } else {
+            analyzeClassByPackage(clazz);
+        }
     }
 
     private void analyzeClassByPackage(JavaClass clazz) {
@@ -372,17 +385,23 @@ public class JDepend {
             String depClz = dependency.getKey();
             JavaPackage depModule = addModule(depClz);
             clzModule.dependsUpon(depModule);
+
+            if (javaClasses.containsKey(depClz)) {
+                JavaClass jc = javaClasses.get(depClz);
+                depModule.addClass(jc);
+            }
         }
     }
 
     private JavaPackage addModule(String clazzName) {
         String moduleName = classModules.get(clazzName);
-        moduleName = moduleName == null ? "default" : moduleName;
+        if (moduleName == null) {
+            System.err.println("WARN: cannot detect module of class: " + clazzName);
+        }
 
-//        if (moduleName.equals("default")) {
-//            System.out.println("WARN: " + clazzName + " -> default module.");
-//        }
+        return addPackage(moduleName == null ? "default" : moduleName);
+    }
 
-        return addPackage(moduleName);
+    public void setModuleAnalysis(boolean isModuleAnalysis) {
     }
 }

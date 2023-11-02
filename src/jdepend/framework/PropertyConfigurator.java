@@ -84,9 +84,11 @@ public class PropertyConfigurator {
         while (e.hasMoreElements()) {
             String key = (String)e.nextElement();
             if (!key.startsWith("ignore")
-                    && (!key.equals("analyzeInnerClasses"))) {
+                    && !key.equals("analyzeInnerClasses")
+                    && !key.equals("projectRoot")
+                    && !key.equals("moduleAnalysis")) {
                 String v = properties.getProperty(key);
-                packages.add(new JavaPackage(key, new Integer(v).intValue()));
+                packages.add(new JavaPackage(key, Integer.parseInt(v)));
             }
         }
 
@@ -98,10 +100,18 @@ public class PropertyConfigurator {
         String key = "analyzeInnerClasses";
         if (properties.containsKey(key)) {
             String value = properties.getProperty(key);
-            return new Boolean(value).booleanValue();
+            return Boolean.parseBoolean(value);
         }
 
         return true;
+    }
+
+    public String getProjectRoot() {
+        return properties.getProperty("projectRoot", "");
+    }
+
+    public boolean isModuleAnalysis() {
+        return Boolean.parseBoolean(properties.getProperty("moduleAnalysis", "false"));
     }
 
     public static File getDefaultPropertyFile() {

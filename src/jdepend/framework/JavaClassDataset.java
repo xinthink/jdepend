@@ -15,7 +15,7 @@ public class JavaClassDataset {
     /**
      * Collection of JavaClass instances.
      */
-    private final Collection<JavaClass> javaClasses;
+    private final Map<String, JavaClass> javaClasses;
 
     /**
      * Map of JavaClass to module name.
@@ -23,16 +23,16 @@ public class JavaClassDataset {
     private final Map<String, String> javaClassModule;
 
     public JavaClassDataset() {
-        javaClasses = new ArrayList<>();
+        javaClasses = new HashMap<>();
         javaClassModule = new HashMap<>();
     }
 
-    public Collection<JavaClass> getJavaClasses() {
+    public Map<String, JavaClass> getJavaClasses() {
         return javaClasses;
     }
 
     public void addJavaClass(JavaClass javaClass) {
-        javaClasses.add(javaClass);
+        javaClasses.put(javaClass.getName(), javaClass);
     }
 
     /**
