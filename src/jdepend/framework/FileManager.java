@@ -14,6 +14,11 @@ import java.util.*;
 
 public class FileManager {
 
+    /**
+     * The path of the project. Which is used to infer the module names.
+     */
+    private String projectPath;
+
     private ArrayList directories;
     private boolean acceptInnerClasses;
 
@@ -30,6 +35,28 @@ public class FileManager {
      */
     public void acceptInnerClasses(boolean b) {
         acceptInnerClasses = b;
+    }
+
+    /**
+     * Sets the path of the project. Which is used to infer the module names.
+     *
+     * @param projectPath Project path.
+     */
+    public void setProjectPath(String projectPath) {
+        this.projectPath = projectPath;
+    }
+
+    /**
+     * Convert the given path to a relative one regards to the project root directory.
+     *
+     * @return A relative path, for path not under the project root, the original path will be returned.
+     */
+    public String getRelativePath(String fullPath) {
+        if (projectPath == null || fullPath == null) {
+            return fullPath;
+        }
+        String path = fullPath.startsWith(projectPath) ? fullPath.substring(projectPath.length()) : fullPath;
+        return path.startsWith("/") ? path.substring(1) : path;
     }
 
     public void addDirectory(String name) throws IOException {

@@ -102,7 +102,7 @@ import java.util.*;
 
 public class JDepend {
 
-    private HashMap packages;
+    private final HashMap<String, JavaPackage> packages;
     private FileManager fileManager;
     private PackageFilter filter;
     private ClassFileParser parser;
@@ -112,12 +112,7 @@ public class JDepend {
     /**
      * Maps JavaClass instances to their corresponding module names.
      */
-    private final Map<JavaClass, String> classModules;
-
-    /**
-     * Modules indexed with their names.
-     */
-    private final Map<String, Module> modules;
+    private Map<String, String> classModules;
 
     public JDepend() {
         this(new PackageFilter());
@@ -127,9 +122,7 @@ public class JDepend {
 
         setFilter(filter);
 
-        this.packages = new HashMap();
-        this.classModules = new HashMap<>();
-        this.modules = new HashMap<>();
+        this.packages = new HashMap<>();
 
         this.fileManager = new FileManager();
         this.parser = new ClassFileParser(filter);
@@ -146,16 +139,26 @@ public class JDepend {
      * 
      * @return Collection of analyzed packages.
      */
-    public Collection analyze() {
+    public Collection<JavaPackage> analyze() {
 
         JavaClassDataset dateset = builder.build();
         Collection<JavaClass> classes = dateset.getJavaClasses();
+        this.classModules = dateset.getJavaClassModule();
 
         for (JavaClass aClass : classes) {
             analyzeClass(aClass);
         }
 
         return getPackages();
+    }
+
+    /**
+     * Sets the path of the project. Which is used to infer the module names.
+     *
+     * @param projectPath Project path.
+     */
+    public void setProjectPath(String projectPath) {
+        fileManager.setProjectPath(projectPath);
     }
 
     /**
@@ -198,7 +201,7 @@ public class JDepend {
      * 
      * @return Collection of analyzed packages.
      */
-    public Collection getPackages() {
+    public Collection<JavaPackage> getPackages() {
         return packages.values();
     }
 
@@ -344,20 +347,42 @@ public class JDepend {
             return;
         }
 
+        analyzeClassByModule(clazz);
+//        analyzeClassByPackage(clazz);
+    }
+
+    private void analyzeClassByPackage(JavaClass clazz) {
+        String packageName = clazz.getPackageName();
         JavaPackage clazzPackage = addPackage(packageName);
         clazzPackage.addClass(clazz);
 
-        Collection imports = clazz.getImportedPackages();
-        for (Iterator i = imports.iterator(); i.hasNext();) {
-            JavaPackage importedPackage = (JavaPackage)i.next();
+        Collection<JavaPackage> imports = clazz.getImportedPackages();
+        for (JavaPackage importedPackage : imports) {
             importedPackage = addPackage(importedPackage.getName());
             clazzPackage.dependsUpon(importedPackage);
         }
     }
 
-    public void addModule(String name) {
-        if (!modules.containsKey(name)) {
-            modules.put(name, new Module(name));
+    private void analyzeClassByModule(JavaClass clazz) {
+        JavaPackage clzModule = addModule(clazz.getName());
+        clzModule.addClass(clazz);
+
+        Map<String, Integer> dependencies = clazz.getDependencies();
+        for (Map.Entry<String, Integer> dependency : dependencies.entrySet()) {
+            String depClz = dependency.getKey();
+            JavaPackage depModule = addModule(depClz);
+            clzModule.dependsUpon(depModule);
         }
+    }
+
+    private JavaPackage addModule(String clazzName) {
+        String moduleName = classModules.get(clazzName);
+        moduleName = moduleName == null ? "default" : moduleName;
+
+//        if (moduleName.equals("default")) {
+//            System.out.println("WARN: " + clazzName + " -> default module.");
+//        }
+
+        return addPackage(moduleName);
     }
 }

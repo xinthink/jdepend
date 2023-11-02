@@ -15,15 +15,20 @@ public class JavaClass {
     private String className;
     private String packageName;
     private boolean isAbstract;
-    private HashMap imports;
+    private final HashMap<String, JavaPackage> imports;
     private String sourceFile;
 
+    /**
+     * The collection of classes on which this class depends.
+     */
+    private final Map<String, Integer> dependencies;
 
     public JavaClass(String name) {
         className = name;
         packageName = "default";
         isAbstract = false;
-        imports = new HashMap();
+        imports = new HashMap<>();
+        dependencies = new HashMap<>();
         sourceFile = "Unknown";
     }
 
@@ -51,7 +56,7 @@ public class JavaClass {
         return sourceFile;
     }
 
-    public Collection getImportedPackages() {
+    public Collection<JavaPackage> getImportedPackages() {
         return imports.values();
     }
 
@@ -59,6 +64,24 @@ public class JavaClass {
         if (!jPackage.getName().equals(getPackageName())) {
             imports.put(jPackage.getName(), jPackage);
         }
+    }
+
+    /**
+     * Increase the dependency to the specified class.
+     *
+     * @param className Name of the class on which this class depends.
+     */
+    public void addDependency(String className) {
+        Integer count = dependencies.get(className);
+        count = count == null ? 1 : count + 1;
+        dependencies.put(className, count);
+    }
+
+    /**
+     * Returns classes on which this class depends.
+     */
+    public Map<String, Integer> getDependencies() {
+        return dependencies;
     }
 
     public boolean isAbstract() {

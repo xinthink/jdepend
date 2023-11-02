@@ -19,8 +19,6 @@ public class JavaClassBuilder {
     private AbstractParser parser;
     private FileManager fileManager;
 
-    private JavaClassDataset dataset;
-
     public JavaClassBuilder() {
         this(new ClassFileParser(), new FileManager());
     }
@@ -57,9 +55,9 @@ public class JavaClassBuilder {
 
         JavaClassDataset dataset = new JavaClassDataset();
 
-        for (Iterator i = fileManager.extractFiles().iterator(); i.hasNext();) {
+        for (Object o : fileManager.extractFiles()) {
 
-            File nextFile = (File)i.next();
+            File nextFile = (File) o;
 
             try {
 
@@ -87,6 +85,7 @@ public class JavaClassBuilder {
                 JavaClass parsedClass = parser.parse(is);
                 if (parsedClass != null) {
                     dataset.addJavaClass(parsedClass);
+                    dataset.putJavaClassModule(parsedClass, inferModule(file));
                 }
             }
         } else if (fileManager.acceptJarFile(file)) {
@@ -109,8 +108,8 @@ public class JavaClassBuilder {
      * @param file Jar, war, or zip file.
      * @param dataset The dataset to be populated with the classes.
      */
-    public void buildClasses(JarFile file, JavaClassDataset dataset) throws IOException {
-
+    public void buildClasses(JarFile file, JavaClassDataset dataset) {
+        String module = inferModule(file);
         Enumeration<JarEntry> entries = file.entries();
         while (entries.hasMoreElements()) {
             ZipEntry e = entries.nextElement();
@@ -119,6 +118,7 @@ public class JavaClassBuilder {
                     JavaClass jc = parser.parse(is);
                     if (jc != null) {
                         dataset.addJavaClass(jc);
+                        dataset.putJavaClassModule(jc, module);
                     }
                 } catch (IOException ioe) {
                     System.out.println("Failed loading " + e.getName() + " in " + file.getName() + ": " + ioe);
@@ -130,6 +130,7 @@ public class JavaClassBuilder {
     }
 
     private void parseJarEntry(JarFile file, ZipEntry jarEntry, JavaClassDataset dataset) {
+        String module = inferModule(file);
         try (final ZipInputStream zip = new ZipInputStream(file.getInputStream(jarEntry))) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
@@ -137,11 +138,24 @@ public class JavaClassBuilder {
                     JavaClass jc = parser.parse(zip);
                     if (jc != null) {
                         dataset.addJavaClass(jc);
+                        dataset.putJavaClassModule(jc, module);
                     }
                 }
             }
         } catch (IOException e) {
             System.out.println("Failed loading " + jarEntry.getName() + " in " + file.getName() + ": " + e);
         }
+    }
+
+    private String inferModule(JarFile jar) {
+        String fileName = jar.getName();
+        int lastSlash = fileName.lastIndexOf('/');
+        return lastSlash > -1 ? fileName.substring(lastSlash + 1) : fileName;
+    }
+
+    private String inferModule(File clzFile) {
+        String path = fileManager.getRelativePath(clzFile.getAbsolutePath());
+        int firstSlash = path.indexOf('/');
+        return firstSlash > -1 ? path.substring(0, firstSlash) : path;
     }
 }

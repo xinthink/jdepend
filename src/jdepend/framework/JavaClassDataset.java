@@ -20,7 +20,7 @@ public class JavaClassDataset {
     /**
      * Map of JavaClass to module name.
       */
-    private final Map<JavaClass, String> javaClassModule;
+    private final Map<String, String> javaClassModule;
 
     public JavaClassDataset() {
         javaClasses = new ArrayList<>();
@@ -38,11 +38,12 @@ public class JavaClassDataset {
     /**
      * @return Map of JavaClass to module name.
      */
-    public Map<JavaClass, String> getJavaClassModule() {
+    public Map<String, String> getJavaClassModule() {
         return javaClassModule;
     }
 
     public void putJavaClassModule(JavaClass javaClass, String moduleName) {
-        javaClassModule.put(javaClass, moduleName);
+//        System.out.println("map " + javaClass.getName() + " to " + moduleName);
+        javaClassModule.put(javaClass.getName(), moduleName);
     }
 }

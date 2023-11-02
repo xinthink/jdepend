@@ -495,7 +495,11 @@ public class JDepend {
                     } catch (IOException ioe) {
                         usage(ioe.getMessage());
                     }
-                    
+                } else if (args[i].equalsIgnoreCase("-project")) {
+                    if (args.length <= i + 1) {
+                        usage("Project base directory not specified.");
+                    }
+                    analyzer.setProjectPath(args[++i]);
                 } else if (args[i].equalsIgnoreCase("-components")) {
                     if (args.length <= i + 1) {
                         usage("Components not specified.");
