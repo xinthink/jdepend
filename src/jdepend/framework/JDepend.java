@@ -152,9 +152,9 @@ public class JDepend {
      */
     public Collection<JavaPackage> analyze() {
 
-        JavaClassDataset dateset = builder.build();
-        this.javaClasses = dateset.getJavaClasses();
-        this.classModules = dateset.getJavaClassModule();
+        JavaClassDataset dataset = builder.build();
+        this.javaClasses = dataset.getJavaClasses();
+        this.classModules = dataset.getJavaClassModule();
 
         for (JavaClass aClass : javaClasses.values()) {
             analyzeClass(aClass);
