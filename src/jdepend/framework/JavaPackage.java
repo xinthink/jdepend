@@ -11,11 +11,11 @@ import java.util.*;
 
 public class JavaPackage {
 
-    private String name;
+    private final String name;
     private int volatility;
-    private HashSet classes;
-    private List afferents;
-    private List efferents;
+    private final HashSet<JavaClass> classes;
+    private final Map<JavaPackage, Integer> afferents;
+    private final Map<JavaPackage, Integer> efferents;
 
 
     public JavaPackage(String name) {
@@ -25,9 +25,9 @@ public class JavaPackage {
     public JavaPackage(String name, int volatility) {
         this.name = name;
         setVolatility(volatility);
-        classes = new HashSet();
-        afferents = new ArrayList();
-        efferents = new ArrayList();
+        classes = new HashSet<>();
+        afferents = new HashMap<>();
+        efferents = new HashMap<>();
     }
 
     public String getName() {
@@ -123,7 +123,7 @@ public class JavaPackage {
         classes.add(clazz);
     }
 
-    public Collection getClasses() {
+    public Collection<JavaClass> getClasses() {
         return classes;
     }
 
@@ -158,65 +158,79 @@ public class JavaPackage {
     }
 
     /**
-     * Adds the specified Java package as an efferent of this package 
-     * and adds this package as an afferent of it.
+     * Adds the specified Java package as an `efferent` of this package
+     * and adds this package as an `afferent` of it.
      * 
      * @param imported Java package.
+     * @param count Number of references.
      */
-    public void dependsUpon(JavaPackage imported) {
-        addEfferent(imported);
-        imported.addAfferent(this);
+    public void dependsUpon(JavaPackage imported, int count) {
+        addEfferent(imported, count);
+        imported.addAfferent(this, count);
     }
 
     /**
-     * Adds the specified Java package as an afferent of this package.
+     * Adds the specified Java package as an `afferent` of this package.
      * 
-     * @param jPackage Java package.
+     * @param pkg Java package.
+     * @param count Number of references.
      */
-    public void addAfferent(JavaPackage jPackage) {
-        if (!jPackage.getName().equals(getName())) {
-            if (!afferents.contains(jPackage)) {
-                afferents.add(jPackage);
-            }
+    private void addAfferent(JavaPackage pkg, int count) {
+        if (!equals(pkg)) {
+            Integer c = afferents.get(pkg);
+            afferents.put(pkg, count + (c == null ? 0 : c));
         }
     }
 
-    public Collection getAfferents() {
-        return afferents;
+    public Collection<JavaPackage> getAfferents() {
+        return afferents.keySet();
     }
 
-    public void setAfferents(Collection afferents) {
-        this.afferents = new ArrayList(afferents);
+    public Integer getAfferentCount(JavaPackage pkg) {
+        return afferents.get(pkg);
     }
 
-    public void addEfferent(JavaPackage jPackage) {
-        if (!jPackage.getName().equals(getName())) {
-            if (!efferents.contains(jPackage)) {
-                efferents.add(jPackage);
-            }
+    public void setAfferents(Collection<JavaPackage> afferents) {
+        this.afferents.clear();
+        for (JavaPackage p : afferents) {
+            this.afferents.put(p, 1);
         }
     }
 
-    public Collection getEfferents() {
-        return efferents;
+    private void addEfferent(JavaPackage pkg, int count) {
+        if (!equals(pkg)) {
+            Integer c = efferents.get(pkg);
+            efferents.put(pkg, count + (c == null ? 0 : c));
+        }
     }
 
-    public void setEfferents(Collection efferents) {
-        this.efferents = new ArrayList(efferents);
+    public Collection<JavaPackage> getEfferents() {
+        return efferents.keySet();
+    }
+
+    public Integer getEfferentCount(JavaPackage pkg) {
+        return efferents.get(pkg);
+    }
+
+    public void setEfferents(Collection<JavaPackage> efferents) {
+        this.efferents.clear();
+        for (JavaPackage p : efferents) {
+            this.efferents.put(p, 1);
+        }
     }
 
     /**
      * @return The afferent coupling (Ca) of this package.
      */
     public int afferentCoupling() {
-        return afferents.size();
+        return afferents.values().stream().reduce(0, Integer::sum);
     }
 
     /**
      * @return The efferent coupling (Ce) of this package.
      */
     public int efferentCoupling() {
-        return efferents.size();
+        return efferents.values().stream().reduce(0, Integer::sum);
     }
 
     /**
@@ -255,15 +269,14 @@ public class JavaPackage {
     }
 
     public boolean equals(Object other) {
-        if (other instanceof JavaPackage) {
-            JavaPackage otherPackage = (JavaPackage) other;
-            return otherPackage.getName().equals(getName());
+        if (other instanceof JavaPackage otherPackage) {
+            return otherPackage.name.equals(name);
         }
         return false;
     }
 
     public int hashCode() {
-        return getName().hashCode();
+        return name.hashCode();
     }
     
     public String toString() {

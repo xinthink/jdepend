@@ -372,19 +372,19 @@ public class JDepend {
         Collection<JavaPackage> imports = clazz.getImportedPackages();
         for (JavaPackage importedPackage : imports) {
             importedPackage = addPackage(importedPackage.getName());
-            clazzPackage.dependsUpon(importedPackage);
+            clazzPackage.dependsUpon(importedPackage, 1);
         }
     }
 
     private void analyzeClassByModule(JavaClass clazz) {
-        JavaPackage clzModule = addModule(clazz.getName());
-        clzModule.addClass(clazz);
+        JavaPackage module = addModule(clazz.getName());
+        module.addClass(clazz);
 
         Map<String, Integer> dependencies = clazz.getDependencies();
         for (Map.Entry<String, Integer> dependency : dependencies.entrySet()) {
             String depClz = dependency.getKey();
             JavaPackage depModule = addModule(depClz);
-            clzModule.dependsUpon(depModule);
+            module.dependsUpon(depModule, dependency.getValue());
 
             if (javaClasses.containsKey(depClz)) {
                 JavaClass jc = javaClasses.get(depClz);

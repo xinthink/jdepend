@@ -1,19 +1,22 @@
 package jdepend.textui;
 
-import java.io.*;
-import java.util.*;
-import java.text.NumberFormat;
-
 import jdepend.framework.JavaClass;
 import jdepend.framework.JavaPackage;
 import jdepend.framework.PackageComparator;
 import jdepend.framework.PackageFilter;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.text.NumberFormat;
+import java.util.*;
+
 /**
  * The <code>JDepend</code> class analyzes directories of Java class files,
  * generates metrics for each Java package, and reports the metrics in a textual
  * format.
- * 
+ *
  * @author <b>Mike Clark</b>
  * @author Clarkware Consulting, Inc.
  */
@@ -35,7 +38,7 @@ public class JDepend {
 
     /**
      * Constructs a <code>JDepend</code> instance with the specified writer.
-     * 
+     *
      * @param writer Writer.
      */
     public JDepend(PrintWriter writer) {
@@ -49,7 +52,7 @@ public class JDepend {
 
     /**
      * Sets the output writer.
-     * 
+     *
      * @param writer Output writer.
      */
     public void setWriter(PrintWriter writer) {
@@ -62,7 +65,7 @@ public class JDepend {
 
     /**
      * Sets the package filter.
-     * 
+     *
      * @param filter Package filter.
      */
     public void setFilter(PackageFilter filter) {
@@ -75,11 +78,11 @@ public class JDepend {
     public void setComponents(String components) {
         analyzer.setComponents(components);
     }
-    
+
     /**
      * Adds the specified directory name to the collection of directories to be
      * analyzed.
-     * 
+     *
      * @param name Directory name.
      * @throws IOException If the directory does not exist.
      */
@@ -89,9 +92,9 @@ public class JDepend {
 
     /**
      * Determines whether inner classes are analyzed.
-     * 
+     *
      * @param b <code>true</code> to analyze inner classes; <code>false</code>
-     *            otherwise.
+     *          otherwise.
      */
     public void analyzeInnerClasses(boolean b) {
         analyzer.analyzeInnerClasses(b);
@@ -197,36 +200,30 @@ public class JDepend {
         printConcreteClassesFooter();
     }
 
-    protected void printEfferents(JavaPackage jPackage) {
+    protected void printEfferents(JavaPackage pkg) {
         printEfferentsHeader();
 
-        ArrayList efferents = new ArrayList(jPackage.getEfferents());
-        Collections.sort(efferents, new PackageComparator(PackageComparator
-                .byName()));
-        Iterator efferentIter = efferents.iterator();
-        while (efferentIter.hasNext()) {
-            JavaPackage efferent = (JavaPackage) efferentIter.next();
-            printPackageName(efferent);
-        }
-        if (efferents.size() == 0) {
+        Collection<JavaPackage> efferents = pkg.getEfferents();
+        efferents.stream()
+                .sorted(Comparator.comparing(JavaPackage::getName))
+                .forEach(p -> printCoupledPackage(p, pkg.getEfferentCount(p)));
+
+        if (efferents.isEmpty()) {
             printEfferentsError();
         }
 
         printEfferentsFooter();
     }
 
-    protected void printAfferents(JavaPackage jPackage) {
+    protected void printAfferents(JavaPackage pkg) {
         printAfferentsHeader();
 
-        ArrayList afferents = new ArrayList(jPackage.getAfferents());
-        Collections.sort(afferents, new PackageComparator(PackageComparator
-                .byName()));
-        Iterator afferentIter = afferents.iterator();
-        while (afferentIter.hasNext()) {
-            JavaPackage afferent = (JavaPackage) afferentIter.next();
-            printPackageName(afferent);
-        }
-        if (afferents.size() == 0) {
+        Collection<JavaPackage> afferents = pkg.getAfferents();
+        afferents.stream()
+                .sorted(Comparator.comparing(JavaPackage::getName))
+                .forEach(p -> printCoupledPackage(p, pkg.getAfferentCount(p)));
+
+        if (afferents.isEmpty()) {
             printAfferentsError();
         }
 
@@ -338,8 +335,8 @@ public class JDepend {
         getWriter().println(tab() + jClass.getName());
     }
 
-    protected void printPackageName(JavaPackage jPackage) {
-        getWriter().println(tab() + jPackage.getName());
+    protected void printCoupledPackage(JavaPackage p, int referenceCount) {
+        getWriter().println(tab() + p.getName() + "(" + referenceCount + ")");
     }
 
     protected void printAbstractClassesHeader() {
@@ -468,8 +465,8 @@ public class JDepend {
         System.err.println("");
         System.err.println("usage: ");
         System.err.println(baseUsage + "[-components <components>]" +
-            " [-file <output file>] <directory> " + 
-            "[directory2 [directory 3] ...]");
+                " [-file <output file>] <directory> " +
+                "[directory2 [directory 3] ...]");
         System.exit(1);
     }
 
