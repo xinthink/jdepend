@@ -502,7 +502,7 @@ public class ClassFileParser extends AbstractParser {
         String pkg = getPackageName(className);
         if (pkg != null && getFilter().accept(pkg)) {
             jClass.addImportedPackage(new JavaPackage(pkg));
-            jClass.addDependency(slashesToDots(className));
+            jClass.addDependency(parseClassName(className));
         }
     }
 
@@ -511,8 +511,8 @@ public class ClassFileParser extends AbstractParser {
     }
 
     private String getPackageName(String s) {
-        if ((s.length() > 0) && (s.charAt(0) == '[')) {
-            String types[] = descriptorToTypes(s);
+        if (!s.isEmpty() && s.charAt(0) == '[') {
+            String[] types = descriptorToTypes(s);
             if (types.length == 0) {
                 return null; // primitives
             }
@@ -529,6 +529,24 @@ public class ClassFileParser extends AbstractParser {
         return "Default";
     }
 
+    private String parseClassName(String s) {
+        if (!s.isEmpty() && s.charAt(0) == '[') {
+            String[] types = descriptorToTypes(s);
+            if (types.length == 0) {
+                return null; // primitives
+            }
+
+            s = types[0];
+        }
+
+        s = slashesToDots(s);
+        if (s.endsWith(";")) {
+            s = s.substring(0, s.length() -1);
+        }
+
+        return s;
+    }
+
     private String[] descriptorToTypes(String descriptor) {
 
         int typesCount = 0;
@@ -538,7 +556,7 @@ public class ClassFileParser extends AbstractParser {
             }
         }
 
-        String types[] = new String[typesCount];
+        String[] types = new String[typesCount];
 
         int typeIndex = 0;
         for (int index = 0; index < descriptor.length(); index++) {

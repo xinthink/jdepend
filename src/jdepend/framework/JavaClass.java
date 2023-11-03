@@ -72,6 +72,10 @@ public class JavaClass {
      * @param className Name of the class on which this class depends.
      */
     public void addDependency(String className) {
+        if (className == null || className.isBlank()) {
+            return;
+        }
+
         Integer count = dependencies.get(className);
         count = count == null ? 1 : count + 1;
         dependencies.put(className, count);
