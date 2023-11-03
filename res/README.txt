@@ -1,0 +1,2 @@
+- You can put a jdepend.properties here for debugging purposes
+- Just don't forget to include it in the classpath
