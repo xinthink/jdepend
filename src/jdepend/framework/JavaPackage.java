@@ -4,7 +4,7 @@ import java.util.*;
 
 /**
  * The <code>JavaPackage</code> class represents a Java package.
- * 
+ *
  * @author <b>Mike Clark</b>
  * @author Clarkware Consulting, Inc.
  */
@@ -55,7 +55,7 @@ public class JavaPackage {
     /**
      * Collects the packages participating in the first package dependency cycle
      * detected which originates from this package.
-     * 
+     *
      * @param list Collecting object to be populated with the list of
      *            JavaPackage instances in a cycle.
      * @return <code>true</code> if a cycle exist; <code>false</code>
@@ -88,7 +88,7 @@ public class JavaPackage {
      * <p>
      * This is a more exhaustive search than that employed by
      * <code>collectCycle</code>.
-     * 
+     *
      * @param list Collecting object to be populated with the list of
      *            JavaPackage instances in a cycle.
      * @return <code>true</code> if a cycle exist; <code>false</code>
@@ -114,7 +114,7 @@ public class JavaPackage {
         if (containsCycle) {
             return true;
         }
-        
+
         list.remove(this);
         return false;
     }
@@ -160,7 +160,7 @@ public class JavaPackage {
     /**
      * Adds the specified Java package as an `efferent` of this package
      * and adds this package as an `afferent` of it.
-     * 
+     *
      * @param imported Java package.
      * @param count Number of references.
      */
@@ -171,7 +171,7 @@ public class JavaPackage {
 
     /**
      * Adds the specified Java package as an `afferent` of this package.
-     * 
+     *
      * @param pkg Java package.
      * @param count Number of references.
      */
@@ -269,16 +269,18 @@ public class JavaPackage {
     }
 
     public boolean equals(Object other) {
-        if (other instanceof JavaPackage otherPackage) {
-            return otherPackage.name.equals(name);
+        if (this == other) {
+            return true;
         }
-        return false;
+
+        return other instanceof JavaPackage &&
+                ((JavaPackage) other).name.equals(name);
     }
 
     public int hashCode() {
         return name.hashCode();
     }
-    
+
     public String toString() {
     	return name;
     }
